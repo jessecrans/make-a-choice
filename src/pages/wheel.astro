@@ -1,0 +1,44 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const makeGradient = (numOptions: number) => { 
+    const colors = [
+        "white",
+        "#C4B5FD",
+        "#A78BFA",
+    ];
+
+    let gradientString = "background: conic-gradient(";
+    
+    const partDeg = Math.floor(360 / numOptions);
+
+    for (let i = 0; i < numOptions; i++) {
+        const currentDeg = partDeg * i;
+        const nextDeg = partDeg * (i + 1);
+        const color = colors[i % (numOptions % 2 === 0 ? 2 : 3)];
+
+        gradientString += `${color} ${currentDeg}deg,${color} ${nextDeg}deg,`;
+    }
+
+    gradientString = gradientString.slice(0, -1);
+    gradientString += ")";
+
+    return gradientString;
+};
+
+const options = ["apple", "banana", "lemon", "pear", "tomato", "peanut", "cucumber"]
+---
+
+<BaseLayout title="Wheel">
+    <div class="max-w-xl m-auto">
+        <div
+            class="w-full aspect-square border-2 rounded-full text-purple-400"
+            style=`${makeGradient(options.length)}`
+        >
+        </div>
+        <form>
+            <textarea class="w-full h-64 border-2 text-purple-400 mt-8"
+            ></textarea>
+        </form>
+    </div>
+</BaseLayout>

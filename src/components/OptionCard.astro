@@ -1,0 +1,26 @@
+---
+import { ShareIcon, ListBulletIcon, XMarkIcon, ArrowPathIcon } from "@heroicons/react/24/solid";
+
+interface Props {
+    title: string;
+}
+
+const { title } = Astro.props as Props;
+
+const icons: Record<string, any> = {
+    "wheel": ArrowPathIcon,
+    "elimination": XMarkIcon,
+    "ranking": ListBulletIcon,
+    "bracket": ShareIcon
+}
+
+const Icon = icons[title];
+---
+
+<a 
+    class="flex flex-col justify-center items-center gap-4 border-2 rounded-2xl p-4 text-xl uppercase font-bold tracking-widest text-purple-400 hover:bg-purple-200/25 transition"
+    href=`/${title}/`
+>
+    <Icon className="w-12 h-12" />
+    <h2>{title}</h2>
+</a>
