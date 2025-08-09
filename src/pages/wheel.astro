@@ -1,44 +1,128 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-
-const makeGradient = (numOptions: number) => { 
-    const colors = [
-        "white",
-        "#C4B5FD",
-        "#A78BFA",
-    ];
-
-    let gradientString = "background: conic-gradient(";
-    
-    const partDeg = Math.floor(360 / numOptions);
-
-    for (let i = 0; i < numOptions; i++) {
-        const currentDeg = partDeg * i;
-        const nextDeg = partDeg * (i + 1);
-        const color = colors[i % (numOptions % 2 === 0 ? 2 : 3)];
-
-        gradientString += `${color} ${currentDeg}deg,${color} ${nextDeg}deg,`;
-    }
-
-    gradientString = gradientString.slice(0, -1);
-    gradientString += ")";
-
-    return gradientString;
-};
-
-const options = ["apple", "banana", "lemon", "pear", "tomato", "peanut", "cucumber"]
 ---
 
+<script>
+    const wheel = document.getElementById("wheel") as HTMLDivElement;
+    const spinButton = document.getElementById("spin-button") as HTMLButtonElement;
+    const textarea = document.getElementById("textarea") as HTMLTextAreaElement;
+
+    /**
+     * Transforms a linear iterator into a value which "ping pongs" between 0 and a certain maximum, with steps of 1.
+     * @param i Iterator value.
+     * @param max Maximum value to be reached.
+     */
+    const pingPong = (i: number, max: number) =>
+        max - Math.abs((i % (2 * max)) - max);
+
+    /**
+     * Makes a circular gradient for the wheel.
+     * @param numOptions Number of pie pieces in the gradient.
+     * @returns Gradient in css string format.
+     */
+    const makeGradient = (numOptions: number) => {
+        const colors = ["white", "#C4B5FD", "#A78BFA", "#7C3AED"];
+
+        let gradientString = "conic-gradient(";
+
+        const partDeg = Math.floor(360 / numOptions);
+
+        for (let i = 0; i < numOptions; i++) {
+            const currentDeg = partDeg * i;
+            const nextDeg = partDeg * (i + 1);
+            const color = colors[pingPong(i, 3)];
+
+            gradientString += `${color} ${currentDeg}deg,${color} ${nextDeg}deg,`;
+        }
+
+        gradientString = gradientString.slice(0, -1);
+        gradientString += ")";
+
+        return gradientString;
+    };
+
+    // Text on wheel stuff
+    let entries = [];
+
+    /**
+     * Handles changes in textarea text by generating the correct background and text entries for the wheel.
+     * @param text Text from textarea to populate the wheel with.
+     */
+    const handleTextUpdate = (text: string) => {
+        entries = text.split("\n");
+
+        // Color the wheel
+        wheel.style.background = makeGradient(entries.length);
+
+        // Make text divs
+        wheel.innerHTML = ""; // clear old labels
+        const radius = wheel.offsetWidth / 2;
+        const labelRadius = 0.5 * radius;
+
+        entries.forEach((entry, i) => {
+            const partDeg = 360 / entries.length;
+
+            const startDeg = -90 + partDeg / 2
+            const angleDeg = startDeg + partDeg * i;
+
+            const angleRad = (angleDeg * Math.PI) / 180
+
+            const x = radius + labelRadius * Math.cos(angleRad);
+            const y = radius + labelRadius * Math.sin(angleRad);
+
+            const label = document.createElement("div");
+            label.textContent = entry;
+            label.style.position = "absolute";
+            label.style.left = `${x}px`;
+            label.style.top = `${y}px`;
+            label.style.transform = `translate(-50%, -50%) rotate(${angleDeg}deg)`;
+            label.style.transformOrigin = "center center";
+
+            wheel.appendChild(label);
+        })
+    }
+
+    textarea.addEventListener("input", () => {
+        handleTextUpdate(textarea.value);
+    });
+
+    // Wheel spinning stuff
+    let currentRotation = 0;
+    const baseSpins = 5;
+
+    spinButton?.addEventListener("click", () => {
+        // Disable button
+        spinButton.disabled = true;
+
+        // Spin the wheel
+        const spinAmount = baseSpins * 360 + Math.floor(Math.random() * 360);
+        currentRotation += spinAmount;
+
+        if (wheel) {
+            wheel.style.transition = "transform 3s ease-out";
+            wheel.style.transform = `rotate(${currentRotation}deg)`;
+        }
+
+        // Re-enable button
+        setTimeout(() => {
+            spinButton.disabled = false;
+        }, 3000)
+    });
+</script>
+
 <BaseLayout title="Wheel">
-    <div class="max-w-xl m-auto">
+    <div class="max-w-lg m-auto">
         <div
-            class="w-full aspect-square border-2 rounded-full text-purple-400"
-            style=`${makeGradient(options.length)}`
+            id="wheel"
+            class="relative w-full aspect-square border-2 rounded-full border-purple-400"
         >
         </div>
-        <form>
-            <textarea class="w-full h-64 border-2 text-purple-400 mt-8"
-            ></textarea>
-        </form>
+        <button
+            id="spin-button"
+            class="border-2 w-full mt-4 border-purple-400 p-2 rounded-xl text-purple-700"
+        >
+            Spin
+        </button>
+        <textarea id="textarea" class="w-full h-64 border-2 border-purple-400 mt-4"></textarea>
     </div>
 </BaseLayout>
