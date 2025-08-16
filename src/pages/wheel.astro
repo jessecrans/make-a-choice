@@ -2,10 +2,92 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 
+<BaseLayout title="Wheel">
+    <div class="max-w-lg m-auto relative">
+        <div
+            id="winner-overlay"
+            class="fixed top-0 right-0 w-screen h-screen backdrop-blur-sm z-2 hidden flex-col gap-4 justify-center items-center"
+        >
+            <div
+                class="flex flex-col bg-white text-center w-3/4 max-w-3xl h-42 text-2xl rounded-xl shadow-lg"
+            >
+                <p
+                    class="w-full bg-purple-400 text-white font-bold rounded-t-xl p-1"
+                >
+                    WINNER
+                </p>
+                <div class="flex items-center justify-center h-full">
+                    <p id="winner-label" class="text-2xl"></p>
+                </div>
+            </div>
+            <div
+                class="w-3/4 max-w-3xl grid grid-cols-2 gap-4 text-lg text-purple-800"
+            >
+                <button
+                    id="continue-button"
+                    class="bg-white border-purple-400 border-2 p-2 rounded-xl shadow-lg hover:bg-purple-100 transition"
+                >
+                    CONTINUE
+                </button>
+                <button
+                    id="remove-continue-button"
+                    class="bg-white border-purple-400 border-2 p-2 rounded-xl shadow-lg hover:bg-purple-100 transition"
+                >
+                    REMOVE WINNER
+                </button>
+            </div>
+        </div>
+        <div
+            class="absolute -top-4 left-1/2 -translate-x-1/2 border-t-48 border-x-16 border-b-0 border-x-transparent border-t-purple-800 z-1"
+        >
+        </div>
+        <div class="overflow-hidden flex justify-center items-center mt-4">
+            <div 
+                class="rounded-full bg-purple-800 w-16 h-16 absolute z-1"
+            />
+            <div
+                id="wheel"
+                class="relative w-full aspect-square border-2 rounded-full border-purple-400 text-2xl shadow-lg text-purple-950"
+            >
+            </div>
+        </div>
+        <button
+            id="spin-button"
+            class="border-2 w-full mt-4 text-lg border-purple-400 p-2 rounded-xl shadow-lg text-purple-800 hover:bg-purple-100 transition"
+        >
+            SPIN
+        </button>
+        <textarea
+            id="textarea"
+            class="w-full h-54 border-2 border-purple-400 mt-4 rounded-xl p-4 text-purple-800 text-lg shadow-lg"
+        ></textarea>
+    </div>
+</BaseLayout>
+
 <script>
+    /* Getting elements */
+
     const wheel = document.getElementById("wheel") as HTMLDivElement;
-    const spinButton = document.getElementById("spin-button") as HTMLButtonElement;
+    const spinButton = document.getElementById(
+        "spin-button",
+    ) as HTMLButtonElement;
     const textarea = document.getElementById("textarea") as HTMLTextAreaElement;
+    const winnerOverlay = document.getElementById("winner-overlay");
+    const winnerLabel = document.getElementById("winner-label");
+    const continueButton = document.getElementById("continue-button");
+    const removeContinueButton = document.getElementById(
+        "remove-continue-button",
+    );
+    
+    /* Global variables */
+
+    let baseSpins = 5;
+    let currentRotation = 0;
+    let entries: string[];
+    let winner: string = "";
+    const spinDuration = 5;
+
+    /* Function definitions */
 
     /**
      * Transforms a linear iterator into a value which "ping pongs" between 0 and a certain maximum, with steps of 1.
@@ -21,11 +103,16 @@ import BaseLayout from "../layouts/BaseLayout.astro";
      * @returns Gradient in css string format.
      */
     const makeGradient = (numOptions: number) => {
-        const colors = ["white", "#C4B5FD", "#A78BFA", "#7C3AED"];
+        const colors = [
+            "white",
+            "oklch(90.2% 0.063 306.703)",
+            "oklch(71.4% 0.203 305.504)",
+            "oklch(55.8% 0.288 302.321)",
+        ];
 
         let gradientString = "conic-gradient(";
 
-        const partDeg = Math.floor(360 / numOptions);
+        const partDeg = 360 / numOptions;
 
         for (let i = 0; i < numOptions; i++) {
             const currentDeg = partDeg * i;
@@ -41,15 +128,13 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         return gradientString;
     };
 
-    // Text on wheel stuff
-    let entries = [];
-
     /**
      * Handles changes in textarea text by generating the correct background and text entries for the wheel.
      * @param text Text from textarea to populate the wheel with.
      */
     const handleTextUpdate = (text: string) => {
         entries = text.split("\n");
+        entries = entries.filter((str) => str.trim() !== ""); // removes empty strings
 
         // Color the wheel
         wheel.style.background = makeGradient(entries.length);
@@ -62,67 +147,116 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         entries.forEach((entry, i) => {
             const partDeg = 360 / entries.length;
 
-            const startDeg = -90 + partDeg / 2
+            const startDeg = -90 + partDeg / 2;
             const angleDeg = startDeg + partDeg * i;
 
-            const angleRad = (angleDeg * Math.PI) / 180
+            const angleRad = (angleDeg * Math.PI) / 180;
 
             const x = radius + labelRadius * Math.cos(angleRad);
             const y = radius + labelRadius * Math.sin(angleRad);
 
             const label = document.createElement("div");
+
+            // Label position styling
             label.textContent = entry;
             label.style.position = "absolute";
             label.style.left = `${x}px`;
             label.style.top = `${y}px`;
             label.style.transform = `translate(-50%, -50%) rotate(${angleDeg}deg)`;
             label.style.transformOrigin = "center center";
+            label.style.width = `${0.75 * radius}px`;
+
+            // debugging
+            // label.style.borderWidth = "2px";
+            // label.style.borderColor = "red";
+
+            // Label text styling
+            label.style.whiteSpace = "nowrap";
+            label.style.overflow = "hidden";
+            label.style.textOverflow = "ellipsis";
+            label.style.textAlign = "right";
 
             wheel.appendChild(label);
-        })
-    }
+        });
+    };
 
-    textarea.addEventListener("input", () => {
-        handleTextUpdate(textarea.value);
-    });
+    /**
+     * Determines a winner based on given rotation of the wheel.
+     * @param entries List of entries.
+     * @param rotation Rotation of the wheel.
+     */
+    const determineWinner = (entries: string[], rotation: number) => {
+        const partDeg = 360 / entries.length;
+        const winnerIndex = Math.floor((rotation % 360) / partDeg);
 
-    // Wheel spinning stuff
-    let currentRotation = 0;
-    const baseSpins = 5;
+        winner = entries[winnerIndex];
+    };
 
-    spinButton?.addEventListener("click", () => {
+    const displayWinner = () => {
+        winnerOverlay!.style.display = "flex";
+        winnerLabel!.innerHTML = winner;
+    };
+
+    /**
+     * Handles logic for spinning wheel and subsequent events.
+     * @param baseSpins Number of spins wheel makes regardless of randomness.
+     */
+    const handleSpin = () => {
         // Disable button
         spinButton.disabled = true;
+        textarea.disabled = true;
+        wheel.style.pointerEvents = "none";
 
         // Spin the wheel
         const spinAmount = baseSpins * 360 + Math.floor(Math.random() * 360);
         currentRotation += spinAmount;
 
-        if (wheel) {
-            wheel.style.transition = "transform 3s ease-out";
-            wheel.style.transform = `rotate(${currentRotation}deg)`;
-        }
+        determineWinner(entries, currentRotation);
+
+        wheel.style.transition = `transform ${spinDuration}s cubic-bezier(.1,0,.1,1)`;
+        wheel.style.transform = `rotate(${-currentRotation}deg)`;
 
         // Re-enable button
         setTimeout(() => {
             spinButton.disabled = false;
-        }, 3000)
-    });
-</script>
+            textarea.disabled = false;
+            wheel.style.pointerEvents = "";
+            setTimeout(() => {
+                displayWinner();
+            }, 500);
+        }, spinDuration * 1e3);
+    };
 
-<BaseLayout title="Wheel">
-    <div class="max-w-lg m-auto">
-        <div
-            id="wheel"
-            class="relative w-full aspect-square border-2 rounded-full border-purple-400"
-        >
-        </div>
-        <button
-            id="spin-button"
-            class="border-2 w-full mt-4 border-purple-400 p-2 rounded-xl text-purple-700"
-        >
-            Spin
-        </button>
-        <textarea id="textarea" class="w-full h-64 border-2 border-purple-400 mt-4"></textarea>
-    </div>
-</BaseLayout>
+    const handleContinue = (removeWinner: boolean) => {
+        winnerOverlay!.style.display = "none";
+
+        if (removeWinner) {
+            entries = entries.filter((str) => str.trim() !== ""); // removes empty strings
+
+            const index = entries.indexOf(winner);
+            if (index !== -1) {
+                entries.splice(index, 1);
+            }
+
+            textarea.value = entries.join("\n");
+
+            handleTextUpdate(textarea.value);
+        }
+    };
+
+    /* Handling wheel entries */
+
+    textarea.addEventListener("input", () => handleTextUpdate(textarea.value));
+
+    /* Handling wheel rotation */
+
+    spinButton?.addEventListener("click", () => handleSpin());
+
+    /* Handling continue buttons */
+
+    continueButton?.addEventListener("click", () => handleContinue(false));
+    removeContinueButton?.addEventListener("click", () => handleContinue(true));
+
+    // Run at page load
+    handleTextUpdate(textarea.value);
+</script>
