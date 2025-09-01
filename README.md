@@ -1,43 +1,17 @@
-# Astro Starter Kit: Minimal
+# Make A Choice
 
-```sh
-npm create astro@latest -- --template minimal
-```
+This website helps users to make choices and was made to study the basics of the `astro` framework using `svelte` reactive components and `tailwindcss` for styling.
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Modes
 
-## 🚀 Project Structure
+### Wheel
 
-Inside of your Astro project, you'll see the following folders and files:
+The wheel mode allows users to randomly sample one of their given options.
 
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
-```
+### Elimination
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+The elimination mode allows users to eliminate their given options one by one until one remains.
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+### Bracket
 
-Any static assets, like images, can be placed in the `public/` directory.
-
-## 🧞 Commands
-
-All commands are run from the root of the project, from a terminal:
-
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+The bracket mode allows users to play a bracket style tournament with their given options, picking the their preference in each given pair until one option remains.

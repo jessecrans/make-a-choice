@@ -1,5 +1,5 @@
 ---
-import { ShareIcon, ListBulletIcon, XMarkIcon, ArrowPathIcon } from "@heroicons/react/24/solid";
+import { TrophyIcon, ListBulletIcon, XMarkIcon, ArrowPathIcon } from "@heroicons/react/24/outline";
 
 interface Props {
     title: string;
@@ -11,15 +11,15 @@ const icons: Record<string, any> = {
     "wheel": ArrowPathIcon,
     "elimination": XMarkIcon,
     "ranking": ListBulletIcon,
-    "bracket": ShareIcon
+    "bracket": TrophyIcon
 }
 
 const Icon = icons[title];
 ---
 
 <a 
-    class="flex flex-col justify-center items-center gap-4 border-2 rounded-2xl p-4 text-xl uppercase font-bold tracking-widest text-purple-400 hover:bg-purple-200/25 transition"
-    href=`/${title}/`
+    class="flex flex-col justify-center items-center gap-4 border-2 rounded-2xl p-4 text-xl uppercase font-light tracking-widest text-purple-600 border-purple-400 hover:bg-purple-200/25 transition shadow-lg"
+    href=`/make-a-choice/${title}/`
 >
     <Icon className="w-12 h-12" />
     <h2>{title}</h2>

@@ -13,5 +13,8 @@ export default defineConfig({
     plugins: [tailwindcss()]
   },
 
-  integrations: [react(), svelte()]
+  integrations: [react(), svelte()],
+
+  site: "https://jessecrans.github.io",
+  base: "/make-a-choice",
 });

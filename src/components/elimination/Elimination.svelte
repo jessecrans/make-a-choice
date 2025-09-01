@@ -1,19 +1,13 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import { flip } from "svelte/animate";
-    import { fly } from "svelte/transition";
-    import EliminationEntry from "./EliminationEntry.svelte";
+    import Entries from "../entries/Entries.svelte";
+    import { entries } from "../entries/entriesState.svelte";
 
-    let entries: string[] = [];
-    let newEntry: string = "";
     let eliminating: boolean = false;
     let eliminated: string[] = [];
 
     onMount(() => {
-        const savedEntries = localStorage.getItem("elimination-entries");
-        if (savedEntries) {
-            entries = JSON.parse(savedEntries);
-        }
+        entries.getLocal();
 
         const savedEliminated = localStorage.getItem("elimination-eliminated");
         if (savedEliminated) {
@@ -28,10 +22,6 @@
         }
     });
 
-    const saveEntries = () => {
-        localStorage.setItem("elimination-entries", JSON.stringify(entries));
-    };
-
     const saveEliminated = () => {
         localStorage.setItem(
             "elimination-eliminated",
@@ -39,30 +29,14 @@
         );
     };
 
-    const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === "Enter") {
-            e.preventDefault();
-            if (newEntry.trim() !== "") {
-                entries = [newEntry.trim(), ...entries];
-                newEntry = "";
-                saveEntries();
-            }
-        }
-    };
-
-    const deleteEntry = (index: number) => {
-        entries = entries.filter((_, i) => i !== index);
-        saveEntries();
-    };
-
     const handleElimination = (index: number) => {
-        if (entries.length <= 1) {
+        if (entries.list.length <= 1) {
             return;
         }
 
-        eliminated = [...eliminated, entries[index]];
+        eliminated = [...eliminated, entries.list[index]];
         saveEliminated();
-        deleteEntry(index);
+        entries.removeIndex(index);
     };
 
     const handleStart = () => {
@@ -76,8 +50,8 @@
         saveEliminated();
 
         if (!eliminating) {
-            entries = []
-            saveEntries();
+            entries.list = [];
+            entries.setLocal(); // otherwise the onMount in Entries component will run and repopulate it with the same data
         }
     };
 
@@ -89,34 +63,25 @@
 <div class="flex flex-col gap-4 text-xl text-purple-800">
     <!-- Entry input -->
     {#if !eliminating}
-        <input
+        <!-- <input
             type="text"
             placeholder="Add new entry..."
             bind:value={newEntry}
             on:keydown={handleKeyDown}
             class="border-2 border-purple-400 p-4 rounded-xl"
-        />
-    {/if}
-
-    {#if eliminating}
+        /> -->
+        <Entries />
+    {:else}
+        <!-- Entry list -->
         <h2 class="text-center">Remaining</h2>
-    {/if}
-
-    <!-- Entry list -->
-    <ul class="flex flex-col gap-2">
-        {#each entries as entry, index (index)}
-            {#if !eliminating}
-                <EliminationEntry
-                    {entry}
-                    deleteFunction={() => deleteEntry(index)}
-                />
-            {:else}
+        <ul class="flex flex-col gap-2">
+            {#each entries.list as entry, index (index)}
                 <button on:click={() => handleElimination(index)}>
                     <li
-                        class={`border-2 border-purple-400 rounded-xl p-4 flex justify-between ${entries.length > 1 ? eliminationHoverStyle : eliminationWinnerStyle} transition shadow-lg`}
+                        class={`border-2 border-purple-400 rounded-xl p-4 flex justify-between ${entries.list.length > 1 ? eliminationHoverStyle : eliminationWinnerStyle} transition shadow-lg`}
                     >
                         <p class="text-purple-600">{entry}</p>
-                        {#if entries.length > 1}
+                        {#if entries.list.length > 1}
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 viewBox="0 0 24 24"
@@ -145,12 +110,10 @@
                         {/if}
                     </li>
                 </button>
-            {/if}
-        {/each}
-    </ul>
+            {/each}
+        </ul>
 
-    <!-- Eliminated list -->
-    {#if eliminating}
+        <!-- Eliminated list -->
         <h2 class="text-center">Eliminated</h2>
         <ul class="flex flex-col gap-2">
             {#each eliminated as elimEntry, index (index)}
@@ -166,7 +129,7 @@
     <!-- Start Stop button -->
     <button
         class="btn-regular"
-        disabled={entries.length === 0 &&
+        disabled={entries.list.length === 0 &&
         eliminated.length === 0 &&
         !eliminating
             ? true
